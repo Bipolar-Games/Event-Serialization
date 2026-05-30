@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Bipolar.EventSerialization.SourceGeneration")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e8d9a633ab461f93deb0c5910b7335edda2f1417")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+61f5627a15b32a4523fab107615b8d3b84ac4167")]
 [assembly: System.Reflection.AssemblyProductAttribute("Bipolar.EventSerialization.SourceGeneration")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Bipolar.EventSerialization.SourceGeneration")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

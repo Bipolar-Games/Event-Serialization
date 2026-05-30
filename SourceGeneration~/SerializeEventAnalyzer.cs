@@ -52,7 +52,7 @@ namespace Bipolar.EventSerialization.SourceGeneration
         /// </summary>
         public static readonly DiagnosticDescriptor TooManyParameters = new(
             id: "BSE003",
-            title: "Containing class must be partial",
+            title: "Too many parameters for [SerializeEvent]",
             messageFormat: "'{0}' has {1} parameters, but UnityEvent supports at most 4",
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Error,
