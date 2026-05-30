@@ -82,9 +82,7 @@ namespace Bipolar.EventSerialization.SourceGeneration
 
             var accessModifier = classSymbol.DeclaredAccessibility.ToString().ToLower();
             var className = classSymbol.Name;
-            var subscriberClassName = namespaceName is not null
-                ? $"{namespaceName}_{className}_SerializeEventSubscriber"
-                : $"{className}_SerializeEventSubscriber";
+
 
             var textWriter = new StringWriter();
             var codeWriter = new IndentedTextWriter(textWriter);
@@ -110,7 +108,10 @@ namespace Bipolar.EventSerialization.SourceGeneration
             }
 
             string sourceContent = textWriter.ToString();
-            context.AddSource(subscriberClassName + ".g.cs", sourceContent);
+            var fileName = namespaceName is not null
+                ? $"{namespaceName}.{className}.SerializeEvent"
+                : $"{className}.SerializeEvent";
+            context.AddSource(fileName + ".g.cs", sourceContent);
 
             void WritePartialClassWithUnityEvents()
             {
@@ -158,7 +159,6 @@ namespace Bipolar.EventSerialization.SourceGeneration
                         var serializedEventName = GetSerializedEventName(eventName);
                         codeWriter.WriteLine($"{eventName} += {serializedEventName}.Invoke;");
                     }
-                    codeWriter.WriteLine("Debug.Log(\"Subcribed serialized events\");");
                     codeWriter.Indent--;
                     codeWriter.WriteLine("}");
                 }
@@ -173,7 +173,7 @@ namespace Bipolar.EventSerialization.SourceGeneration
             void WriteSubscriberClass()
             {
                 codeWriter.WriteLine();
-                codeWriter.WriteLine($"internal class {subscriberClassName} : MonoBehaviour");
+                codeWriter.WriteLine($"internal class {fileName} : MonoBehaviour");
                 codeWriter.WriteLine("{");
                 codeWriter.Indent++;
                 codeWriter.WriteLine("private void Awake()");
