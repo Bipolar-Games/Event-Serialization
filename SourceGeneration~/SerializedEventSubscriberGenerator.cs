@@ -6,7 +6,6 @@ using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks.Sources;
 
 namespace Bipolar.EventSerialization.SourceGeneration
 {
@@ -163,7 +162,7 @@ namespace Bipolar.EventSerialization.SourceGeneration
                     codeWriter.Indent--;
                     codeWriter.WriteLine("}");
                 }
-                
+
                 string GetSerializedEventName(string eventName)
                 {
                     return $"_{eventName}Event";
