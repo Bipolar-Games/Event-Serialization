@@ -17,7 +17,6 @@ namespace Bipolar.EventSerialization
 
         private void Reset()
         {
-            //hideFlags = HideFlags.HideInInspector;
 #if UNITY_EDITOR
             UnityEditor.ObjectChangeEvents.changesPublished += ObjectChangeEvents_changesPublished;
 #endif
@@ -38,6 +37,7 @@ namespace Bipolar.EventSerialization
 #if UNITY_EDITOR
         private void ObjectChangeEvents_changesPublished(ref UnityEditor.ObjectChangeEventStream stream)
         {
+            hideFlags = HideFlags.HideInInspector;
             if (HasGameObjectStructureChanged(stream))
             {
                 HandleStructureChange();
@@ -58,6 +58,7 @@ namespace Bipolar.EventSerialization
             var hosts = GetComponents<ISerializedEventHost>();
             if (hosts.Length <= 0)
             {
+                UnityEditor.ObjectChangeEvents.changesPublished -= ObjectChangeEvents_changesPublished;
                 DestroyImmediate(this);
                 return;
             }
