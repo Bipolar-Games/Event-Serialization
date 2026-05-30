@@ -74,7 +74,7 @@ crashlytics-build.properties
 *.dwlt
 
 # Source Generation C# Solution
-/[Ss]ource [Gg]eneration/[Ss]ource[Gg]eneration~/obj/
-/[Ss]ource [Gg]eneration/[Ss]ource[Gg]eneration~/bin/
+/[Ss]ource[Gg]eneration~/obj/
+/[Ss]ource[Gg]eneration~/bin/
 project.assets.json
 *.nupkg
