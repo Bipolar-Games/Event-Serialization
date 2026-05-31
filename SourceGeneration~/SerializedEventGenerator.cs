@@ -10,7 +10,7 @@ using System.Linq;
 namespace Bipolar.EventSerialization.SourceGeneration
 {
     [Generator]
-    internal sealed class SerializedEventSubscriberGenerator : ISourceGenerator
+    internal sealed class SerializedEventGenerator : ISourceGenerator
     {
         public void Initialize(GeneratorInitializationContext context)
         {
