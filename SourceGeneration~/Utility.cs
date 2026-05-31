@@ -1,15 +1,24 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using System.Collections.Immutable;
+using System.Linq;
 
 namespace Bipolar.EventSerialization.SourceGeneration
 {
     public static class Utility
     {
-        /// <summary>
-        /// Returns true when the symbol carries [SerializeEvent] (or any attribute whose
-        /// unqualified name matches — tolerant of namespace differences during early
-        /// compilation stages).
-        /// </summary>
+        public static bool IsSerializeEventAttributeName(string name)
+        {
+            return name is "SerializeEventAttribute" or "SerializeEvent";
+        }
+
+        public static bool IsSerializeEventAttribute(INamedTypeSymbol? attributeClass)
+        {
+            return attributeClass is not null
+                && attributeClass.ContainingNamespace.Name == "Bipolar"
+                && IsSerializeEventAttributeName(attributeClass.Name); 
+        }
+
         public static bool HasSerializeEventAttribute(ISymbol symbol)
         {
             foreach (var attribute in symbol.GetAttributes())
@@ -18,8 +27,7 @@ namespace Bipolar.EventSerialization.SourceGeneration
                 if (attributeClass is null)
                     continue;
 
-                if (attributeClass.ContainingNamespace.Name == "Bipolar"
-                    && (attributeClass.Name is "SerializeEventAttribute" or "SerializeEvent"))
+                if (IsSerializeEventAttribute(attributeClass))
                     return true;
             }
 
@@ -39,32 +47,61 @@ namespace Bipolar.EventSerialization.SourceGeneration
 
         public static bool IsVoidDelegate(ISymbol symbol)
         {
-            if (symbol is IEventSymbol eventSymbol)
+            if (symbol is IEventSymbol)
                 return true;
 
-            ITypeSymbol? type = GetSymbolType(symbol);
-
+            var type = GetSymbolType(symbol);
             if (type is null || type.TypeKind != TypeKind.Delegate)
                 return false;
 
-            foreach (var member in ((INamedTypeSymbol)type).GetMembers("Invoke"))
-                if (member is IMethodSymbol invoke)
-                    return invoke.ReturnType.SpecialType == SpecialType.System_Void;
+            bool isVoidReturnType = ((INamedTypeSymbol)type).GetMembers("Invoke")
+                .OfType<IMethodSymbol>()
+                .Any(m => m.ReturnType.SpecialType == SpecialType.System_Void);
 
-            return false;
+            return isVoidReturnType;
         }
 
         public static ImmutableArray<IParameterSymbol> GetDelegateParameters(ISymbol symbol)
         {
-            ITypeSymbol? type = GetSymbolType(symbol);
-            if (type is not INamedTypeSymbol named || type.TypeKind != TypeKind.Delegate)
-                return ImmutableArray<IParameterSymbol>.Empty;
-
-            foreach (var member in named.GetMembers("Invoke"))
-                if (member is IMethodSymbol invoke)
-                    return invoke.Parameters;
+            var type = GetSymbolType(symbol);
+            if (type is INamedTypeSymbol named && type.TypeKind == TypeKind.Delegate)
+                foreach (var member in named.GetMembers("Invoke"))
+                    if (member is IMethodSymbol invoke)
+                        return invoke.Parameters;
 
             return ImmutableArray<IParameterSymbol>.Empty;
+        }
+
+        public static string GetSerializedEventName(ISymbol symbol)
+        {
+            foreach (var attribute in symbol.GetAttributes())
+            {
+
+                if (IsSerializeEventAttribute(attribute.AttributeClass))
+                {
+                    var customName = attribute.ConstructorArguments.FirstOrDefault();
+                    if (customName.IsNull == false && customName.Value is string name && SyntaxFacts.IsValidIdentifier(name)) 
+                        return name;
+                }
+            }
+            return $"_{symbol.Name}Event";
+        }
+
+        public static int GetParametersCount(ITypeSymbol? type)
+        {
+            if (type is not null && type.TypeKind == TypeKind.Delegate)
+            {
+                foreach (var member in ((INamedTypeSymbol)type).GetMembers("Invoke"))
+                {
+                    if (member is not IMethodSymbol invokeMethod)
+                        continue;
+
+                    var parameters = invokeMethod.Parameters;
+                    return parameters.Length;
+                }
+            }
+
+            return 0;
         }
     }
 }
