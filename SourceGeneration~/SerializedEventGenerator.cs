@@ -158,6 +158,7 @@ namespace Bipolar.EventSerialization.SourceGeneration
                     {
                         var eventName = members[i].Name;
                         var serializedEventName = Utility.GetSerializedEventName(members[i]);
+                        codeWriter.WriteLine($"{eventName} -= {serializedEventName}.Invoke;");
                         codeWriter.WriteLine($"{eventName} += {serializedEventName}.Invoke;");
                     }
                     codeWriter.Indent--;
