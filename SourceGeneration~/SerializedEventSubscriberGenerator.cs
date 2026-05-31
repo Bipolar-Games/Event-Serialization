@@ -142,7 +142,8 @@ namespace Bipolar.EventSerialization.SourceGeneration
                             var typeArgs = string.Join(", ", parameters.Take(argsCount).Select(p => p.Type.ToDisplayString()));
                             codeWriter.Write($"<{typeArgs}>");
                         }
-                        codeWriter.WriteLine($" {GetSerializedEventName(eventName)};");
+                        string serializedEventName = Utility.GetSerializedEventName(members[i]);
+                        codeWriter.WriteLine($" {serializedEventName};");
                     }
                 }
 
@@ -156,7 +157,7 @@ namespace Bipolar.EventSerialization.SourceGeneration
                     for (int i = 0; i < members.Count; i++)
                     {
                         var eventName = members[i].Name;
-                        var serializedEventName = GetSerializedEventName(eventName);
+                        var serializedEventName = Utility.GetSerializedEventName(members[i]);
                         codeWriter.WriteLine($"{eventName} += {serializedEventName}.Invoke;");
                     }
                     codeWriter.Indent--;
@@ -164,11 +165,6 @@ namespace Bipolar.EventSerialization.SourceGeneration
                 }
 
             }
-        }
-        
-        public static string GetSerializedEventName(string eventName)
-        {
-            return $"_{eventName}Event";
         }
     }
 

@@ -10,9 +10,7 @@ namespace Bipolar.EventSerialization.SourceGeneration
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     internal sealed class SerializeEventAnalyzer : DiagnosticAnalyzer
     {
-        // -------------------------------------------------------------------------
-        // Diagnostics
-        // -------------------------------------------------------------------------
+        #region Diagnostics
 
         /// <summary>
         /// Fired when [SerializeEvent] is placed on a field/property whose type is
@@ -60,16 +58,33 @@ namespace Bipolar.EventSerialization.SourceGeneration
                 "[SerializeEvent] may only be applied to events, or to fields/properties whose " +
                 "type is a delegate with at most 4 parameters.");
 
+        /// <summary>
+        /// Fired when [SerializeEvent] is placed on a member whose invoke function
+        /// requires more than 4 parameters.
+        /// </summary>
+        public static readonly DiagnosticDescriptor IncorrectCustomEventName = new(
+            id: "BSE004",
+            title: "Incorrect CustomEventName in [SerializeEvent]",
+            messageFormat: "'{0}' has a custom name \"{1}\", which is not a correct identifier",
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Error,
+            isEnabledByDefault: true,
+            description:
+                "CustomEventName value has to be a valid identifier.");
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-            ImmutableArray.Create(InvalidDelegateType, NotPartialClass, TooManyParameters);
+        #endregion
+
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(
+            InvalidDelegateType,
+            NotPartialClass, 
+            TooManyParameters, 
+            IncorrectCustomEventName);
 
         public override void Initialize(AnalysisContext context)
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
 
-            // We analyse completed symbols, not syntax nodes, so we get full type info.
             context.RegisterSymbolAction(AnalyzeFieldOrProperty,
                 SymbolKind.Field,
                 SymbolKind.Property);
@@ -83,13 +98,7 @@ namespace Bipolar.EventSerialization.SourceGeneration
             if (Utility.HasSerializeEventAttribute(symbol) == false)
                 return;
 
-            ITypeSymbol type = symbol switch
-            {
-                IFieldSymbol field => field.Type,
-                IPropertySymbol property => property.Type,
-                _ => null!
-            };
-
+            var type = Utility.GetSymbolType(symbol);
             if (IsVoidDelegate(type) == false)
             {
                 ReportInvalidDelegateTypeDiagnosticOnMember(ctx, symbol);
@@ -100,67 +109,40 @@ namespace Bipolar.EventSerialization.SourceGeneration
                 ReportDiagnosticOnContainingClass(ctx, symbol);
             }
 
-            int parametersCount = GetParametersCount(symbol);
+            int parametersCount = Utility.GetParametersCount(type);
             if (parametersCount > 4)
             {
                 ReportTooManyParametersDiagnosticOnMember(ctx, symbol, parametersCount);
             }
         }
 
-        private static int GetParametersCount(ISymbol symbol)
-        {
-            var type = symbol switch
-            {
-                IFieldSymbol field => field.Type,
-                IPropertySymbol property => property.Type,
-                IEventSymbol @event => @event.Type,
-                _ => null
-            };
-
-            if (type is not null && type.TypeKind == TypeKind.Delegate)
-            {
-                foreach (var member in ((INamedTypeSymbol)type).GetMembers("Invoke"))
-                {
-                    if (member is not IMethodSymbol invokeMethod)
-                        continue;
-
-                    var parameters = invokeMethod.Parameters;
-                    return parameters.Length;
-                }
-            }
-
-            return 0;
-        }
-
         private static void AnalyzeEvent(SymbolAnalysisContext ctx)
         {
-            if (Utility.HasSerializeEventAttribute(ctx.Symbol) == false)
+            var symbol = ctx.Symbol;
+            if (Utility.HasSerializeEventAttribute(symbol) == false)
                 return;
 
-            if (IsContainingTypeCorrect(ctx.Symbol) == false)
+            if (IsContainingTypeCorrect(symbol) == false)
             {
-                ReportDiagnosticOnContainingClass(ctx, ctx.Symbol);
+                ReportDiagnosticOnContainingClass(ctx, symbol);
+            }
+
+            var type = Utility.GetSymbolType(symbol);
+            int parametersCount = Utility.GetParametersCount(type);
+            if (parametersCount > 4)
+            {
+                ReportTooManyParametersDiagnosticOnMember(ctx, symbol, parametersCount);
             }
         }
 
-
-        /// <summary>
-        /// Returns true for any delegate type whose Invoke method has:
-        ///   – return type  : void
-        ///   – parameter list: empty
-        ///
-        /// This covers System.Action as well as custom `delegate void Foo()` declarations.
-        /// </summary>
         private static bool IsVoidDelegate(ITypeSymbol? type)
         {
             if (type is null)
                 return false;
 
-            // Must be a delegate.
             if (type.TypeKind != TypeKind.Delegate)
                 return false;
 
-            // Retrieve the Invoke method — every delegate has exactly one.
             var namedType = (INamedTypeSymbol)type;
             IMethodSymbol? invokeMethod = null;
 
@@ -246,7 +228,7 @@ namespace Bipolar.EventSerialization.SourceGeneration
                 var attributeSyntax = syntax
                     .DescendantNodes()
                     .OfType<AttributeSyntax>()
-                    .FirstOrDefault(a => a.Name.ToString() is "SerializeEvent" or "SerializeEventAttribute");
+                    .FirstOrDefault(a => Utility.IsSerializeEventAttributeName(a.Name.ToString()));
 
                 var location = attributeSyntax?.GetLocation() ?? syntax.GetLocation();
                 ctx.ReportDiagnostic(Diagnostic.Create(NotPartialClass, location, memberSymbol.ContainingType.Name));
