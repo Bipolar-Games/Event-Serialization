@@ -163,32 +163,12 @@ namespace Bipolar.EventSerialization.SourceGeneration
                     codeWriter.WriteLine("}");
                 }
 
-                string GetSerializedEventName(string eventName)
-                {
-                    return $"_{eventName}Event";
-                }
-
             }
-
-            void WriteSubscriberClass()
-            {
-                codeWriter.WriteLine();
-                codeWriter.WriteLine($"internal class {fileName} : MonoBehaviour");
-                codeWriter.WriteLine("{");
-                codeWriter.Indent++;
-                codeWriter.WriteLine("private void Awake()");
-
-                codeWriter.WriteLine("{");
-                codeWriter.Indent++;
-
-                codeWriter.WriteLine("Debug.Log(\"Subscriber created\");");
-
-                codeWriter.Indent--;
-                codeWriter.WriteLine("}");
-
-                codeWriter.Indent--;
-                codeWriter.WriteLine("}");
-            }
+        }
+        
+        public static string GetSerializedEventName(string eventName)
+        {
+            return $"_{eventName}Event";
         }
     }
 

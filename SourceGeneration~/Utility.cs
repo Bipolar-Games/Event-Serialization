@@ -19,25 +19,30 @@ namespace Bipolar.EventSerialization.SourceGeneration
                     continue;
 
                 if (attributeClass.ContainingNamespace.Name == "Bipolar"
-                    && (attributeClass.Name == "SerializeEventAttribute" || attributeClass.Name == "SerializeEvent"))
+                    && (attributeClass.Name is "SerializeEventAttribute" or "SerializeEvent"))
                     return true;
             }
 
             return false;
         }
 
+        public static ITypeSymbol? GetSymbolType(ISymbol symbol)
+        {
+            return symbol switch
+            {
+                IEventSymbol evt => evt.Type,
+                IFieldSymbol field => field.Type,
+                IPropertySymbol property => property.Type,
+                _ => null
+            };
+        }
 
         public static bool IsVoidDelegate(ISymbol symbol)
         {
             if (symbol is IEventSymbol eventSymbol)
                 return true;
 
-            var type = symbol switch
-            {
-                IFieldSymbol field => field.Type,
-                IPropertySymbol property => property.Type,
-                _ => null
-            };
+            ITypeSymbol? type = GetSymbolType(symbol);
 
             if (type is null || type.TypeKind != TypeKind.Delegate)
                 return false;
@@ -51,14 +56,7 @@ namespace Bipolar.EventSerialization.SourceGeneration
 
         public static ImmutableArray<IParameterSymbol> GetDelegateParameters(ISymbol symbol)
         {
-            ITypeSymbol? type = symbol switch
-            {
-                IEventSymbol evt => evt.Type,
-                IFieldSymbol field => field.Type,
-                IPropertySymbol property => property.Type,
-                _ => null
-            };
-
+            ITypeSymbol? type = GetSymbolType(symbol);
             if (type is not INamedTypeSymbol named || type.TypeKind != TypeKind.Delegate)
                 return ImmutableArray<IParameterSymbol>.Empty;
 
